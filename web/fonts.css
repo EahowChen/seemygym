@@ -1,0 +1,92 @@
+/*
+  字体集中管理文件 / Centralized font settings
+
+  变更记录：
+  - 将系统本地的 Graphik 作为英文/拉丁首选（使用 local() 首选项）。
+  - 从 Google Fonts 引入 Noto Serif SC 作为中文（简体）首选。
+
+  说明：浏览器优先使用 `local()` 找到的系统字体；若找不到会回退到 Google Fonts 或后备字体。
+  直接通过文件系统绝对路径（file:// 或 /Library/Fonts）在浏览器中通常不可用，建议若需自托管字体，把字体文件放到 `web/fonts/` 并用相对 URL 引入。
+*/
+
+/* 本地 Noto Serif SC（已下载到 web/fonts/），优先使用本地文件以保证离线与稳定 */
+@font-face {
+  font-family: 'NotoSerifSCLocal';
+  src: url('./fonts/H4cyBXePl9DZ0Xe7gG9cyOj7uK2-n-D2rd4FY7RlrCWv.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  /* 限定为 CJK 字符集合，这样英数字将回退到拉丁族字体 */
+  unicode-range: U+3000-303F, U+4E00-9FFF, U+3400-4DBF, U+F900-FAFF, U+20000-2A6DF, U+2E80-2EFF, U+31C0-31EF, U+FF00-FFEF;
+}
+@font-face {
+  font-family: 'NotoSerifSCLocal';
+  src: url('./fonts/H4cyBXePl9DZ0Xe7gG9cyOj7uK2-n-D2rd4FY7SCqyWv.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+3000-303F, U+4E00-9FFF, U+3400-4DBF, U+F900-FAFF, U+20000-2A6DF, U+2E80-2EFF, U+31C0-31EF, U+FF00-FFEF;
+}
+
+/* 本地/系统 Graphik 字体声明：优先尝试系统已安装的字体名，备用尝试项目内 fonts 文件（若存在） */
+@font-face {
+  font-family: 'GraphikLocal';
+  src: local('Graphik'), local('Graphik Regular'), local('Graphik-Regular'),
+       url('./fonts/Graphik-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  /* 限定为 Latin 字符及数字，这样中文会走 NotoSerifSCLocal */
+  unicode-range: U+0000-00FF, U+0100-017F, U+0180-024F, U+1E00-1EFF;
+}
+
+:root {
+  /* 英文/拉丁首选：本地 Graphik（GraphikLocal），若不可用回退到系统/通用拉丁族 */
+  --font-latin: 'GraphikLocal', "Avenir Next", "Helvetica Neue", "SF Pro Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica", sans-serif;
+
+  /* 中文（CJK）首选：本地 Noto Serif SC（NotoSerifSCLocal），回退到系统 CJK 字体 */
+  --font-cjk: 'NotoSerifSCLocal', 'Noto Serif SC', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+
+  /* UI 字体组合：先英文字体，再 CJK 回退 */
+  --font-ui: var(--font-latin), var(--font-cjk);
+
+  /* 可选字号变量 */
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-sm: 13px;
+}
+
+/* 便捷类：在需要单独指定中/英文字体时使用 */
+.font-latin { font-family: var(--font-latin); }
+.font-cjk { font-family: var(--font-cjk); }
+
+/* 在中文页面中：
+   - 对常规 UI 文本（标题、按钮、标签、提示等）优先使用 CJK 字体（NotoSerifSCLocal）
+   - 对表格单元与表单控件优先使用拉丁字体（GraphikLocal）以保证数字和输入框的字形一致性
+*/
+html[lang^="zh"] body,
+html[lang^="zh"] h1,
+html[lang^="zh"] h2,
+html[lang^="zh"] h3,
+html[lang^="zh"] p,
+html[lang^="zh"] label,
+html[lang^="zh"] button,
+html[lang^="zh"] .topbar,
+html[lang^="zh"] .card,
+html[lang^="zh"] .hint,
+html[lang^="zh"] .month-chip,
+html[lang^="zh"] .weekday-pill,
+html[lang^="zh"] .list,
+html[lang^="zh"] .card-title {
+  font-family: var(--font-cjk), var(--font-latin) !important;
+}
+
+html[lang^="zh"] table,
+html[lang^="zh"] td,
+html[lang^="zh"] th,
+html[lang^="zh"] input,
+html[lang^="zh"] select,
+html[lang^="zh"] textarea {
+  font-family: var(--font-latin), var(--font-cjk) !important;
+}
+

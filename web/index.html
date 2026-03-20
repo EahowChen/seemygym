@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>健身记录原型</title>
+    <link rel="stylesheet" href="./fonts.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#d05656">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="健身记录">
+    <link rel="apple-touch-icon" href="./icons/icon-192.svg">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <h1>训练重量追踪台</h1>
+        <div class="controls">
+          <label>
+            年份
+            <input id="yearInput" type="number" value="2026" min="2000" max="2100" />
+          </label>
+          <button id="importCalendarBtn" type="button">开始记录</button>
+        </div>
+      </header>
+
+      <section class="table-panel">
+        <h2>表格记录</h2>
+        <div class="month-pager">
+          <div class="month-controls">
+            <button id="prevMonthBtn" class="arrow-btn" type="button" aria-label="上个月">▲</button>
+            <span id="monthPageLabel" class="month-chip">March</span>
+            <button id="nextMonthBtn" class="arrow-btn" type="button" aria-label="下个月">▼</button>
+          </div>
+          <p class="notes">Notes: 请在表格内填入训练重量（kg）。</p>
+        </div>
+        <div class="training-filter">
+          <label>
+            训练日显示
+            <select id="trainingModeSelect">
+              <option value="all" selected>显示全部日期</option>
+              <option value="interval">隔n天训练</option>
+              <option value="weekly">每周固定日训练</option>
+            </select>
+          </label>
+          <div id="intervalTrainingControls" class="training-filter-sub" hidden>
+            <label>
+              起始日
+              <select id="intervalStartDaySelect"></select>
+            </label>
+            <label>
+              每隔
+              <input id="intervalNInput" type="number" min="1" max="14" value="2" />
+              天
+            </label>
+          </div>
+          <div id="weeklyTrainingControls" class="training-filter-sub" hidden>
+            <span class="training-weekly-label">每周训练日</span>
+            <label class="weekday-pill"><input type="checkbox" class="weekly-day-checkbox" value="1" /><span>周一</span></label>
+            <label class="weekday-pill"><input type="checkbox" class="weekly-day-checkbox" value="2" /><span>周二</span></label>
+            <label class="weekday-pill"><input type="checkbox" class="weekly-day-checkbox" value="3" /><span>周三</span></label>
+            <label class="weekday-pill"><input type="checkbox" class="weekly-day-checkbox" value="4" /><span>周四</span></label>
+            <label class="weekday-pill"><input type="checkbox" class="weekly-day-checkbox" value="5" /><span>周五</span></label>
+            <label class="weekday-pill"><input type="checkbox" class="weekly-day-checkbox" value="6" /><span>周六</span></label>
+            <label class="weekday-pill"><input type="checkbox" class="weekly-day-checkbox" value="0" /><span>周日</span></label>
+          </div>
+        </div>
+        <div id="tableContainer" class="table-wrap"></div>
+      </section>
+
+      <section class="editor-panel">
+        <h2>运动分类编辑</h2>
+        <div class="editor-layout">
+          <div class="card">
+            <div class="card-title">一级分类（部位）</div>
+            <div class="row-tools">
+              <input id="newPartInput" type="text" placeholder="例如：肩" />
+              <button id="addPartBtn" type="button">新增</button>
+            </div>
+            <ul id="partList" class="list"></ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">二级分类（动作）</div>
+            <div id="exerciseHint" class="hint">先选择一个部位</div>
+            <div class="row-tools">
+              <input id="newExerciseInput" type="text" placeholder="例如：侧举" />
+              <button id="addExerciseBtn" type="button">新增</button>
+            </div>
+            <ul id="exerciseList" class="list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="chart-panel">
+        <h2>趋势绘图</h2>
+        <p id="chartMeta" class="hint">先选择训练部位和动作，再点击“绘图”。</p>
+        <div class="chart-editor">
+          <div class="editor-group plot-selector-group editor-group-full">
+            <div class="editor-title">绘图选择</div>
+            <label>
+              训练部位
+              <select id="plotPartSelect">
+                <option value="">请选择部位</option>
+              </select>
+            </label>
+            <div id="plotExerciseSelector" class="plot-exercise-selector"></div>
+            <div class="group-actions">
+              <button id="plotSelectedBtn" type="button" disabled>绘图</button>
+            </div>
+          </div>
+
+          <div class="editor-group editor-group-full colormap-ops-row">
+            <div class="editor-title">统一设置</div>
+            <label>字体大小 <input id="globalFontSizeInput" type="number" min="10" max="30" value="18" /></label>
+            <label>图宽(px) <input id="chartWidthInput" type="number" min="0" max="2200" value="1100" /></label>
+            <label>图高(px) <input id="chartHeightInput" type="number" min="220" max="1000" value="350" /></label>
+            <label>线条粗细 <input id="lineWidthInput" type="number" min="1" max="8" value="3" /></label>
+            <label>
+              线型
+              <select id="lineDashInput">
+                <option value="solid" selected>实线</option>
+                <option value="dashed">虚线</option>
+                <option value="dotted">点线</option>
+              </select>
+            </label>
+            <label>
+              点类
+              <select id="pointStyleInput">
+                <option value="circle" selected>圆形</option>
+                <option value="rect">方形</option>
+                <option value="triangle">三角形</option>
+              </select>
+            </label>
+            <label>点大小 <input id="pointSizeInput" type="number" min="1" max="12" value="5" /></label>
+            <label>线条透明度 <input id="opacityInput" type="number" min="0.1" max="1" step="0.1" value="1" /></label>
+          </div>
+
+          <div class="editor-group editor-group-full">
+            <div class="editor-title">Colormap</div>
+            <label>
+              <select id="colormapSelect">
+                <option value="vidvid">Vidvid</option>
+                <option value="set3" selected>Set3</option>
+                <option value="twilight">twilight</option>
+                <option value="paired">Paired</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <div id="customColormapBlock" class="custom-colormap-block" hidden>
+              <div class="custom-color-row">
+                <div id="customColorInputs" class="custom-color-inputs"></div>
+                <div class="custom-color-actions">
+                  <button id="addColorBoxBtn" type="button">+颜色框</button>
+                  <button id="removeColorBoxBtn" type="button">-颜色框</button>
+                  <button id="saveColormapBtn" type="button">添加自定义色图</button>
+                </div>
+              </div>
+            </div>
+            <div class="group-actions">
+              <label class="export-format-wrap">
+                <select id="exportFormatSelect">
+                  <option value="png" selected>PNG</option>
+                  <option value="pdf">PDF</option>
+                </select>
+              </label>
+              <button id="exportChartBtn" type="button">导出图像</button>
+              <button id="clearAllChartBtn" type="button">Clear All</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div id="chartLegendOverlay" class="chart-legend-overlay"></div>
+          <div id="legendSizePopup" class="legend-size-popup" hidden>
+            <label for="legendSizeInput">Legend 字体</label>
+            <input id="legendSizeInput" type="number" min="10" max="40" value="16" />
+            <button id="legendAutoBtn" type="button">Auto</button>
+            <button id="legendSizeApplyBtn" type="button">确定</button>
+          </div>
+          <canvas id="trendChart"></canvas>
+        </div>
+      </section>
+
+      <footer class="copyright">copyright, 我是 eahow</footer>
+    </main>
+
+    <script src="./app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./service-worker.js').catch(function (err) {
+            console.warn('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
